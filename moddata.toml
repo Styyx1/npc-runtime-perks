@@ -1,0 +1,7 @@
+name = "styyx-npc-perks"
+license = "proprietary"
+workflowname = "styyx-npc-perks"
+
+
+[configs]
+use_fuck = true

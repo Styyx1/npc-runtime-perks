@@ -1,0 +1,29 @@
+Styyx Source Available License v1.0
+
+Copyright (c) 2026 Styyx
+
+Permission is granted to any person obtaining a copy of this software and its source code to:
+
+View, study, and audit the source code.
+Compile the software for personal use.
+Modify the source code for personal use.
+Share patches or source-code changes that do not include compiled binaries.
+
+The following activities are prohibited without prior written permission from the copyright holder:
+
+Redistribution of compiled binaries, whether modified or unmodified.
+Public distribution of derivative works in binary form.
+Distribution of forks presented as official releases.
+Use of the project's name, branding, logos, or artwork in derivative releases.
+
+This project is made publicly available to encourage transparency, education, security auditing, and community contributions.
+
+It is not intended to permit public redistribution of unofficial builds or derivative releases.
+
+Contributions submitted to the project may be incorporated into future releases under this license.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, 
+DAMAGES, OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
