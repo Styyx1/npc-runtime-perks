@@ -10,8 +10,8 @@ includes("extern/styyx-utils")
 local mod_name = "styyx-npc-perks"
 
 set_project(mod_name)
-set_version("1.0.0")
-set_license("proprietary")
+set_version("1.1.0")
+set_license("GPL-3.0")
 
 -- language and warnings
 set_languages("c++23")
@@ -22,13 +22,11 @@ add_rules("mode.debug", "mode.releasedbg")
 set_defaultmode("releasedbg")
 --add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"}) --useful for clion or vscode
 add_rules("plugin.vsxmake.autoupdate")
-includes("xmake-rules.lua")
 
 -- commonlib options
 set_config("skyrim_ae",true)
-set_config("rex_toml", true)
-set_config("use-hook-utils", true)
-set_config("use-fuck", true)
+set_config("commonlib_toml", true)
+set_config("use-fui", true)
 
 
 -- add plugin target
@@ -36,16 +34,10 @@ target(mod_name)
     add_deps("commonlibsse", {public = true})
     add_deps("styyx-util", {public = true})
 
-    if has_config("skyrim_ae") then
-        set_targetdir("build/AE/skse/plugins")
-    else
-        set_targetdir("build/SE/skse/plugins")
-    end
-
-    add_rules("skse-template.plugin", {
+    add_rules("commonlibsse.plugin", {
         name = mod_name,
         author = "styyx",
-        description = "A plugin template for commonlibsse."
+        description = "allows npc to hold perks added at runtime"
     })
 
     if has_config("skyrim_ae") then
@@ -69,22 +61,3 @@ target(mod_name)
         os.trycp("$(projectdir)/release/**.toml",  plugins)
         os.trycp("$(projectdir)/release/**.json",  plugins)
     end)
-
-
--- builds both game versions. use with ``xmake shiprelease``
--- ship task: builds SE then AE
-task("shiprelease")
-    set_menu {
-        usage       = "xmake shiprelease",
-        description = "Build release for SE and AE",
-    }
-    on_run(function()
-        print("Building SE...")
-        os.exec("xmake f -m releasedbg --skyrim_ae=false")
-        os.exec("xmake")
-        print("Building AE...")
-        os.exec("xmake f -m releasedbg --skyrim_ae=true")
-        os.exec("xmake")
-    end)
-
-

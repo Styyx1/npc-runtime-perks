@@ -12,18 +12,18 @@ void Serialisation::InitialiseSerialisation()
 {
     if (const auto serialisation = SKSE::GetSerializationInterface())
     {
-        logs::info("{:=^30}", "SERIALISATION"sv);
+        REX::INFO("{:=^30}", "SERIALISATION");
         serialisation->SetUniqueID(ID);
         serialisation->SetSaveCallback(&SaveCallback);
         serialisation->SetLoadCallback(&LoadCallback);
         serialisation->SetRevertCallback(&RevertCallback);
-        logs::info("Initialised serialisation");
+        REX::INFO("Initialised serialisation");
     }
 }
 
 void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 {
-    logs::debug("Start saving to SKSE co-save");
+    REX::DEBUG("Start saving to SKSE co-save");
 
     const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
     ps->OnSave();
@@ -40,7 +40,7 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 
     if (!a_intfc->OpenRecord(Type, Version))
     {
-        logs::error("Failed to open record");
+        REX::ERROR("Failed to open record");
         return;
     }
 
@@ -48,7 +48,7 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 
     if (!a_intfc->WriteRecordData(count))
     {
-        logs::error("Failed to write map size");
+        REX::ERROR("Failed to write map size");
         return;
     }
 
@@ -72,7 +72,7 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
         }
     }
 
-    logs::info("Saved {} actors with perks", count);
+    REX::INFO("Saved {} actors with perks", count);
 }
 
 void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
@@ -84,7 +84,7 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
 
     if (type != Type || version != Version)
     {
-        logs::error("version or type don't match");
+        REX::ERROR("version or type don't match");
         return;
     }
 
@@ -93,10 +93,10 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
     uint32_t count = 0;
     if (!a_intfc->ReadRecordData(count))
     {
-        logs::error("Failed to read actor count");
+        REX::ERROR("Failed to read actor count");
         return;
     }
-    logs::info("Loaded Actor Count: {}", count);
+    REX::INFO("Loaded Actor Count: {}", count);
 
     serde_map new_map{};
 
@@ -106,21 +106,21 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
         RE::FormID actorID;
         if (!a_intfc->ReadRecordData(actorID))
         {
-            logs::error("Failed to read ActorID on load");
+            REX::ERROR("Failed to read ActorID on load");
             return;
         }
-        // logs::info("ActorID is: {}", actorID);
+        // REX::INFO("ActorID is: {}", actorID);
         uint32_t perk_data_count = 0;
         if (!a_intfc->ReadRecordData(perk_data_count))
         {
-            logs::error("Failed to read Perk Count");
+            REX::ERROR("Failed to read Perk Count");
             return;
         }
 
         RE::FormID resolvedActorID;
         if (!a_intfc->ResolveFormID(actorID, resolvedActorID))
         {
-            logs::error("Failed to resolve actor ID");
+            REX::ERROR("Failed to resolve actor ID");
             continue;
         }
 
@@ -135,12 +135,12 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
 
             if (!a_intfc->ReadRecordData(perk_id))
             {
-                logs::error("Failed to read PerkID");
+                REX::ERROR("Failed to read PerkID");
                 return;
             }
             if (!a_intfc->ReadRecordData(rank))
             {
-                logs::error("Failed to read Rank");
+                REX::ERROR("Failed to read Rank");
                 return;
             }
 
@@ -148,7 +148,7 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
 
             if (!a_intfc->ResolveFormID(perk_id, resolvedPerkID))
             {
-                logs::warn("Failed to Resolve PerkID");
+                REX::WARN("Failed to Resolve PerkID");
                 continue;
             }
             temp_perks.push_back({resolvedPerkID, rank});
@@ -164,12 +164,12 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
         ps->serialisation_map = std::move(new_map);
     }
     ps->OnLoad();
-    logs::info("Loaded {} actors with perks", ps->serialisation_map.size());
+    REX::INFO("Loaded {} actors with perks", ps->serialisation_map.size());
 }
 
 void Serialisation::RevertCallback([[maybe_unused]] SKSE::SerializationInterface* a_intfc)
 {
-    logs::info("Reverting actors with perks");
+    REX::INFO("Reverting actors with perks");
 
     const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
 

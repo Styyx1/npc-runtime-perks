@@ -1,5 +1,7 @@
 #include "papyrus.h"
 
+#include <st-actor.h>
+
 #include "REX/REX/Singleton.h"
 #include "hooks/hooks.h"
 #include "perk-manip.h"
@@ -10,11 +12,11 @@ bool Bind(VM* a_vm)
 {
     if (!a_vm)
     {
-        logs::critical("couldn't get VM State"sv);
+        REX::CRITICAL("couldn't get VM State");
         return false;
     }
 
-    logs::info("{:=^30}", "PAPYRUS"sv);
+    REX::INFO("{:=^30}", "PAPYRUS");
 
     Functions::Bind(*a_vm);
 
@@ -23,13 +25,13 @@ bool Bind(VM* a_vm)
 
 void Functions::Bind(VM& a_vm)
 {
-    constexpr auto script_name = "Styyx_PerksForNPC"sv;
+    constexpr auto script_name = "Styyx_PerksForNPC";
 
     a_vm.RegisterFunction("GetVersion", script_name, GetVersion, true);
     a_vm.RegisterFunction("GetAllPerksFromActor", script_name, GetAllPerksFromActor);
     a_vm.RegisterFunction("GetAllRuntimePerksFromActor", script_name, GetAllRuntimePerksFromActor);
 
-    logs::info("Registered papyrus functions");
+    REX::INFO("Registered papyrus functions");
 }
 
 uint32_t Functions::GetVersion(VM*, StackID, RE::StaticFunctionTag*)
@@ -40,7 +42,7 @@ uint32_t Functions::GetVersion(VM*, StackID, RE::StaticFunctionTag*)
 std::vector<RE::BGSPerk*> Functions::GetAllPerksFromActor(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*,
                                                           RE::Actor* a_actor)
 {
-    logs::info("GetAllRuntimePerksFromActor"sv);
+    REX::INFO("GetAllRuntimePerksFromActor");
     std::vector<RE::BGSPerk*> perks{};
     if (!a_actor)
     {
@@ -48,8 +50,8 @@ std::vector<RE::BGSPerk*> Functions::GetAllPerksFromActor(VM* a_vm, StackID a_st
         return perks;
     }
 
-    perks = REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->GetPerks(a_actor);
-    ActorUtil::GetPerksFromBaseActor(a_actor, perks);
+    perks = REX::TSingleton<PERK::ActorPerkStorage>::GetSingleton()->GetPerks(a_actor);
+    StyyxUtil::ActorUtil::GetPerksFromBaseActor(a_actor, perks);
     return perks;
 }
 
@@ -63,7 +65,7 @@ std::vector<RE::BGSPerk*> Functions::GetAllRuntimePerksFromActor(VM* a_vm, Stack
         return perks;
     }
 
-    perks = REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->GetPerks(a_actor);
+    perks = REX::TSingleton<PERK::ActorPerkStorage>::GetSingleton()->GetPerks(a_actor);
     return perks;
 }
 } // namespace Papyrus

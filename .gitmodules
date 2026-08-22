@@ -3,4 +3,4 @@
 	url = https://github.com/Styyx1/StyyxUtils
 [submodule "lib/commonlibsse"]
 	path = lib/commonlibsse
-	url = https://github.com/powerof3/CommonLibSSE
+	url = git@github.com:libxse/commonlibsse

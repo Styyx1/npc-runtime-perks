@@ -58,8 +58,8 @@ void FUCKMenu::PerkShower::DrawOptions()
 {
 
     FUCK::SameLine();
-    FUCKUtil::Checkbox(LAB::BASE_PERKS.c_str(), MENU::bShowAllPerksInMenu, Config::show_all_perks,
-                       TOOL::BASE_PERKS.c_str());
+    StyyxUtil::FUCKUtil::Checkbox(LAB::BASE_PERKS.c_str(), MENU::bShowAllPerksInMenu, Config::show_all_perks,
+                                  TOOL::BASE_PERKS.c_str());
 
 
     const auto now     = std::chrono::steady_clock::now();

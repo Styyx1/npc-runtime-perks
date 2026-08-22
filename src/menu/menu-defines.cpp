@@ -2,6 +2,7 @@
 
 #include "configs/config.h"
 #include "perk-manip.h"
+#include "st-actor.h"
 
 namespace PERK
 {
@@ -64,7 +65,7 @@ void FUNCS::UpdatePerkList()
         if (MENU::bShowAllPerksInMenu)
         {
             std::vector<RE::BGSPerk*> base_perks;
-            ActorUtil::GetPerksFromBaseActor(actor, base_perks);
+            StyyxUtil::ActorUtil::GetPerksFromBaseActor(actor, base_perks);
 
             for (auto perk : base_perks)
             {

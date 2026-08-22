@@ -5,34 +5,17 @@
       "label": "VM: build AE",
       "type": "shell",
       "command": "build-mod",
-      "args": ["${workspaceFolderBasename}", "--target", "ae"],
+      "args": ["${workspaceFolderBasename}", "--libxse"],
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
-    {
-      "label": "VM: build SE",
-      "type": "shell",
-      "command": "build-mod",
-      "args": ["${workspaceFolderBasename}", "--target", "se"],
-      "group": "build",
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
-    },
-    {
-      "label": "VM: ship release",
-      "type": "shell",
-      "command": "build-mod",
-      "args": ["${workspaceFolderBasename}", "--target", "ship"],
-      "group": "build",
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
-    },
+
     {
       "label": "VM: build clean",
       "type": "shell",
       "command": "build-mod",
-      "args": ["${workspaceFolderBasename}", "--clean"],
+      "args": ["${workspaceFolderBasename}", "--clean", "--libxse"],
       "group": "build",
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }

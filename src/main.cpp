@@ -5,25 +5,26 @@
 #include "menu/ingame-menu.h"
 #include "perk-manip.h"
 #include "serial.h"
+#include "st-actor.h"
 
 namespace
 {
 
 bool HasRuntimePerkImpl(RE::Actor* actor, RE::BGSPerk* perk)
 {
-    return REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->HasRuntimeAddedPerk(actor, perk);
+    return REX::TSingleton<PERK::ActorPerkStorage>::GetSingleton()->HasRuntimeAddedPerk(actor, perk);
 }
 
 bool GetRuntimeAddedPerksImpl(RE::Actor* actor, std::vector<RE::BGSPerk*>& out)
 {
-    REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->AddRuntimePerksToVector(actor, out);
+    REX::TSingleton<PERK::ActorPerkStorage>::GetSingleton()->AddRuntimePerksToVector(actor, out);
     return !out.empty();
 }
 
 bool GetAllActorPerksImpl(RE::Actor* actor, std::vector<RE::BGSPerk*>& out)
 {
-    ActorUtil::GetPerksFromBaseActor(actor, out);
-    REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->AddRuntimePerksToVector(actor, out);
+    StyyxUtil::ActorUtil::GetPerksFromBaseActor(actor, out);
+    REX::TSingleton<PERK::ActorPerkStorage>::GetSingleton()->AddRuntimePerksToVector(actor, out);
     return !out.empty();
 }
 } // namespace
@@ -50,11 +51,9 @@ void Listener(SKSE::MessagingInterface::Message* a_msg)
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse)
 {
-    Init(skse);
-    SKSE::AllocTrampoline(14 * 4);
+    Init(skse, {.trampoline = true, .trampolineSize = 14 * 4});
     PERK::Serialisation::InitialiseSerialisation();
     Config::UpdateConfig();
-    PERK::PerkForActors::InstallHooks();
     SKSE::GetMessagingInterface()->RegisterListener(Listener);
     SKSE::GetPapyrusInterface()->Register(Papyrus::Bind);
 
