@@ -9,7 +9,53 @@ void PerkForActors::ForEachHook::Call(RE::Actor* a_actor, RE::PerkEntryVisitor& 
 {
 
     func(a_actor, a_visitor);
-    PerkManip::ApplyPerksFromMap(a_actor);
+    auto* ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+
+    std::vector<RE::BGSPerk*> perks;
+
+    {
+        std::shared_lock lock(ps->perk_mutex);
+
+        auto it = ps->actor_perk_ranks.find(a_actor);
+        if (it == ps->actor_perk_ranks.end())
+        {
+            return;
+        }
+
+        for (const auto& data : it->second)
+        {
+            if (data.perk)
+            {
+                perks.push_back(data.perk);
+            }
+        }
+    }
+
+    ps->LogPerksFromMap(a_actor);
+
+    // PerkManip::ApplyPerksFromMap(a_actor);
+
+    for (auto* perk : perks)
+    {
+
+        if (!perk)
+        {
+            continue;
+        }
+
+        for (auto* entry : perk->perkEntries)
+        {
+            if (!entry)
+            {
+                continue;
+            }
+
+            if (a_visitor.Visit(entry) == RE::BSContainer::ForEachResult::kStop)
+            {
+                return;
+            }
+        }
+    }
 }
 void PerkForActors::AddPerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk, std::uint32_t a_rank)
 {

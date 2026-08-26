@@ -31,6 +31,7 @@ struct ActorPerkStorage : REX::TSingleton<ActorPerkStorage>
     void AddRuntimePerksToVector(RE::Actor* a_actor, std::vector<RE::BGSPerk*>& a_vectorOut);
     bool HasAnyPerk(RE::Actor* a_actor);
     bool HasRuntimeAddedPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk);
+    void LogPerksFromMap(RE::Actor* a_actor);
 
   private:
     void RebuildSerialisationMap();
