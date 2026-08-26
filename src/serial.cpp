@@ -23,7 +23,7 @@ void Serialisation::InitialiseSerialisation()
 
 void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 {
-    logs::debug("Start saving to SKSE co-save");
+    logs::info("Start saving to SKSE co-save");
 
     const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
     ps->OnSave();
@@ -32,9 +32,6 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
     // extra scope for lock and copy map
     {
         std::shared_lock lock(ps->perk_mutex);
-        if (ps->serialisation_map.empty())
-            return;
-
         local = ps->serialisation_map;
     }
 
