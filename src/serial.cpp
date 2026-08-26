@@ -12,7 +12,7 @@ void Serialisation::InitialiseSerialisation()
 {
     if (const auto serialisation = SKSE::GetSerializationInterface())
     {
-        REX::INFO("{:=^30}", "SERIALISATION"sv);
+        REX::INFO("{:=^30}", "SERIALISATION");
         serialisation->SetUniqueID(ID);
         serialisation->SetSaveCallback(&SaveCallback);
         serialisation->SetLoadCallback(&LoadCallback);
@@ -25,7 +25,7 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 {
     REX::INFO("Start saving to SKSE co-save");
 
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     ps->OnSave();
 
     serde_map local{};
@@ -85,7 +85,7 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
         return;
     }
 
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     uint32_t count = 0;
     if (!a_intfc->ReadRecordData(count))
@@ -168,7 +168,7 @@ void Serialisation::RevertCallback([[maybe_unused]] SKSE::SerializationInterface
 {
     REX::INFO("Reverting actors with perks");
 
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     std::unique_lock lock(ps->perk_mutex);
     ps->actor_perk_ranks.clear();
