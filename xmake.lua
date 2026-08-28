@@ -23,6 +23,7 @@ set_defaultmode("releasedbg")
 --add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"}) --useful for clion or vscode
 add_rules("plugin.vsxmake.autoupdate")
 
+
 -- commonlib options
 set_config("skyrim_ae",true)
 set_config("commonlib_toml", true)

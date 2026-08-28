@@ -4,7 +4,13 @@
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#include "RE/B/BGSAbilityPerkEntry.h"
+#include "RE/B/BGSPerkEntry.h"
+#include "RE/Offsets_RTTI.h"
+#include "SKSE/API.h"
 
 namespace PERK
 {
@@ -105,8 +111,6 @@ void ActorPerkStorage::LogPerksFromMap(RE::Actor* a_actor)
             {
                 continue;
             }
-            REX::INFO("{} has {} in runtime map", a_actor->GetName(),
-                      data.perk ? data.perk->GetName() : "Invalid Perk");
         }
     }
 }
@@ -195,12 +199,10 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
     // ActorPerkStorage::GetSingleton() is completely fine but clangd complains
     // and shows anything used from that scruct as error unless gotten explicitely
     // the magic of developing on linux
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     bool apply = false;
     {
-        std::unique_lock lock(ps->perk_mutex);
-
         auto& perks = ps->actor_perk_ranks[a_actor];
 
         auto perkIt =
@@ -224,10 +226,11 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         {
             if (entry)
             {
-                entry->ApplyPerkEntry(a_actor);
+                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->ApplyPerkEntry(a_actor); });
             }
         }
     }
+    a_actor->OnArmorActorValueChanged();
 }
 void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 {
@@ -236,13 +239,11 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         return;
     }
 
-    auto* ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto* ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
-    bool remove = false;
+    bool removeEntries = false;
 
     {
-        std::unique_lock lock(ps->perk_mutex);
-
         auto actorIt = ps->actor_perk_ranks.find(a_actor);
         if (actorIt == ps->actor_perk_ranks.end())
         {
@@ -271,22 +272,47 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         {
             ps->actor_perk_ranks.erase(actorIt);
         }
-        remove = true;
+
+        removeEntries = true;
     }
 
-
-    // should remove the perk entries from the actor
-    // TODO: needs more testing
-    if (remove)
+    if (!removeEntries)
     {
-        for (const auto entry : a_perk->perkEntries)
+        return;
+    }
+
+    for (auto* entry : a_perk->perkEntries)
+    {
+        if (!entry)
         {
-            if (!entry)
-            {
-                continue;
-            }
-            entry->RemovePerkEntry(a_actor);
+            continue;
         }
+
+        switch (entry->GetType())
+        {
+            case RE::PERK_ENTRY_TYPE::kEntryPoint:
+                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->RemovePerkEntry(a_actor); });
+
+                break;
+            case RE::PERK_ENTRY_TYPE::kAbility:
+            {
+                RE::BGSAbilityPerkEntry* ab = static_cast<RE::BGSAbilityPerkEntry*>(entry);
+
+
+                if (ab)
+                {
+                    SKSE::GetTaskInterface()->AddTask([ab, a_actor]() { ab->RemovePerkEntry(a_actor); });
+                }
+                else
+                {
+                    REX::WARN("CAST FAILED");
+                }
+            }
+            break;
+            default:
+                break;
+        }
+        a_actor->OnArmorActorValueChanged();
     }
 }
 bool PerkManip::HasPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk, bool original)
@@ -323,7 +349,12 @@ void PerkManip::ApplyPerksFromMap(RE::Actor* a_actor)
             for (auto& entry : t_perk->perkEntries)
             {
                 ++applications;
-                entry->ApplyPerkEntry(a_actor);
+                SKSE::GetTaskInterface()->AddTask(
+                    [entry, a_actor]()
+                    {
+                        entry->ApplyPerkEntry(a_actor);
+                        a_actor->OnArmorActorValueChanged();
+                    });
             }
             ranks--;
         }

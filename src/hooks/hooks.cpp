@@ -65,9 +65,8 @@ void PerkForActors::AddPerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk, std::u
 }
 void PerkForActors::RemovePerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk)
 {
-
-    PerkManip::RemovePerkFromActor(a_this, a_perk);
     func(a_this, a_perk);
+    PerkManip::RemovePerkFromActor(a_this, a_perk);
 }
 void PerkForActors::ApplyTempPerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk)
 {
@@ -77,9 +76,8 @@ void PerkForActors::ApplyTempPerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk)
 }
 void PerkForActors::RemoveTempPerk::Call(RE::Actor* a_this, RE::BGSPerk* a_perk)
 {
-
-    PerkManip::RemovePerkFromActor(a_this, a_perk);
     func(a_this, a_perk);
+    PerkManip::RemovePerkFromActor(a_this, a_perk);
 }
 bool PerkForActors::HasPerkConditionStruct::Call(RE::Actor* a_this, RE::BGSPerk* a_perk)
 {
