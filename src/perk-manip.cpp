@@ -295,7 +295,12 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         switch (entry->GetType())
         {
             case RE::PERK_ENTRY_TYPE::kEntryPoint:
-                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->RemovePerkEntry(a_actor); });
+                SKSE::GetTaskInterface()->AddTask(
+                    [entry, a_actor]()
+                    {
+                        entry->RemovePerkEntry(a_actor);
+                        a_actor->OnArmorActorValueChanged();
+                    });
 
                 break;
             case RE::PERK_ENTRY_TYPE::kAbility:
@@ -305,7 +310,12 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 
                 if (ab)
                 {
-                    SKSE::GetTaskInterface()->AddTask([ab, a_actor]() { ab->RemovePerkEntry(a_actor); });
+                    SKSE::GetTaskInterface()->AddTask(
+                        [ab, a_actor]()
+                        {
+                            ab->RemovePerkEntry(a_actor);
+                            a_actor->OnArmorActorValueChanged();
+                        });
                 }
                 else
                 {
@@ -316,7 +326,6 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
             default:
                 break;
         }
-        a_actor->OnArmorActorValueChanged();
     }
 }
 bool PerkManip::HasPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk, bool original)
