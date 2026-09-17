@@ -26,12 +26,18 @@ bool GetAllActorPerksImpl(RE::Actor* actor, std::vector<RE::BGSPerk*>& out)
     REX::Singleton<PERK::ActorPerkStorage>::GetSingleton()->AddRuntimePerksToVector(actor, out);
     return !out.empty();
 }
+
+bool _HasPerk(RE::Actor* actor, RE::BGSPerk* perk)
+{
+    return PERK::PerkManip::HasPerk(actor, perk, actor->HasPerk(perk));
+}
+
 } // namespace
 
 extern "C" DLLEXPORT ActorPerksAPI* GetNPCPerkAPI()
 {
     static ActorPerksAPI api{ACTOR_PERKS_API_VERSION, HasRuntimePerkImpl, GetRuntimeAddedPerksImpl,
-                             GetAllActorPerksImpl};
+                             GetAllActorPerksImpl, _HasPerk};
 
     return &api;
 }

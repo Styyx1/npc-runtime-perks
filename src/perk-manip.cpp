@@ -25,7 +25,6 @@ void ActorPerkStorage::OnLoad()
 }
 std::vector<RE::BGSPerk*> ActorPerkStorage::GetPerks(RE::Actor* a_actor)
 {
-
     std::vector<RE::BGSPerk*> result;
 
     if (!a_actor)
@@ -48,7 +47,6 @@ std::vector<RE::BGSPerk*> ActorPerkStorage::GetPerks(RE::Actor* a_actor)
 }
 void ActorPerkStorage::AddRuntimePerksToVector(RE::Actor* a_actor, std::vector<RE::BGSPerk*>& a_vectorOut)
 {
-
     if (!a_actor)
     {
         return;
@@ -71,7 +69,6 @@ void ActorPerkStorage::AddRuntimePerksToVector(RE::Actor* a_actor, std::vector<R
 
 bool ActorPerkStorage::HasAnyPerk(RE::Actor* a_actor)
 {
-
     if (!a_actor)
     {
         return false;
@@ -81,7 +78,6 @@ bool ActorPerkStorage::HasAnyPerk(RE::Actor* a_actor)
 }
 bool ActorPerkStorage::HasRuntimeAddedPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 {
-
     if (!a_actor || !a_perk)
     {
         return false;
@@ -226,11 +222,15 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         {
             if (entry)
             {
-                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->ApplyPerkEntry(a_actor); });
+                SKSE::GetTaskInterface()->AddTask(
+                    [entry, a_actor]()
+                    {
+                        entry->ApplyPerkEntry(a_actor);
+                        a_actor->OnArmorActorValueChanged();
+                    });
             }
         }
     }
-    a_actor->OnArmorActorValueChanged();
 }
 void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 {
@@ -291,17 +291,25 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         switch (entry->GetType())
         {
             case RE::PERK_ENTRY_TYPE::kEntryPoint:
-                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->RemovePerkEntry(a_actor); });
+                SKSE::GetTaskInterface()->AddTask(
+                    [entry, a_actor]()
+                    {
+                        entry->RemovePerkEntry(a_actor);
+                        a_actor->OnArmorActorValueChanged();
+                    });
 
                 break;
             case RE::PERK_ENTRY_TYPE::kAbility:
             {
                 RE::BGSAbilityPerkEntry* ab = static_cast<RE::BGSAbilityPerkEntry*>(entry);
-
-
                 if (ab)
                 {
-                    SKSE::GetTaskInterface()->AddTask([ab, a_actor]() { ab->RemovePerkEntry(a_actor); });
+                    SKSE::GetTaskInterface()->AddTask(
+                        [ab, a_actor]()
+                        {
+                            ab->RemovePerkEntry(a_actor);
+                            a_actor->OnArmorActorValueChanged();
+                        });
                 }
                 else
                 {

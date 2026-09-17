@@ -24,7 +24,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 inline constexpr const char* ACTOR_PERKS_DLL_NAME = "styyx-npc-perks.dll";
 inline constexpr const char* ACTOR_PERKS_API_FUNC = "GetNPCPerkAPI";
-inline constexpr uint32_t ACTOR_PERKS_API_VERSION = 1;
+inline constexpr uint32_t ACTOR_PERKS_API_VERSION = 2;
 
 struct ActorPerksAPI
 {
@@ -33,6 +33,8 @@ struct ActorPerksAPI
     bool (*HasRuntimePerk)(RE::Actor*, RE::BGSPerk*);
     bool (*GetRuntimeAddedPerks)(RE::Actor*, std::vector<RE::BGSPerk*>&);
     bool (*GetAllActorPerks)(RE::Actor*, std::vector<RE::BGSPerk*>&);
+    // new in API version 2
+    bool (*_HasPerk)(RE::Actor*, RE::BGSPerk*);
 };
 
 inline ActorPerksAPI* RequestActorPerksAPI()
