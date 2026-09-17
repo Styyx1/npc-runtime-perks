@@ -222,15 +222,19 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 
     if (apply)
     {
-        for (const auto entry : a_perk->perkEntries)
+        for (auto& entry : a_perk->perkEntries)
         {
             if (entry)
             {
-                SKSE::GetTaskInterface()->AddTask([entry, a_actor]() { entry->ApplyPerkEntry(a_actor); });
+                SKSE::GetTaskInterface()->AddTask(
+                    [entry, a_actor]()
+                    {
+                        entry->ApplyPerkEntry(a_actor);
+                        a_actor->OnArmorActorValueChanged();
+                    });
             }
         }
     }
-    a_actor->OnArmorActorValueChanged();
 }
 void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 {

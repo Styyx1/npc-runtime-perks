@@ -12,7 +12,6 @@ void PerkForActors::ForEachHook::Call(RE::Actor* a_actor, RE::PerkEntryVisitor& 
     auto* ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     std::vector<RE::BGSPerk*> perks;
-
     {
         std::shared_lock lock(ps->perk_mutex);
 
@@ -24,20 +23,15 @@ void PerkForActors::ForEachHook::Call(RE::Actor* a_actor, RE::PerkEntryVisitor& 
 
         for (const auto& data : it->second)
         {
-            if (data.perk)
+            if (data.perk && data.perk->data.playable)
             {
                 perks.push_back(data.perk);
             }
         }
     }
 
-    ps->LogPerksFromMap(a_actor);
-
-    // PerkManip::ApplyPerksFromMap(a_actor);
-
     for (auto* perk : perks)
     {
-
         if (!perk)
         {
             continue;
