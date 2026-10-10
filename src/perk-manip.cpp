@@ -215,7 +215,7 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
     // ActorPerkStorage::GetSingleton() is completely fine but clangd complains
     // and shows anything used from that scruct as error unless gotten explicitely
     // the magic of developing on linux
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     bool apply = false;
     {
@@ -255,7 +255,7 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         return;
     }
 
-    auto* ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto* ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
 
     bool removeEntries = false;
 
@@ -319,7 +319,7 @@ void PerkManip::ApplyPerksFromMap(RE::Actor* a_actor)
         return;
     }
 
-    auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     std::vector<RE::PerkRankData> perks;
 
     auto it = ps->actor_perk_ranks.find(a_actor);
@@ -358,12 +358,12 @@ void PerkManip::ApplyPerksFromMap(RE::Actor* a_actor)
 bool PerkManip::IsGameplayMapEmpty()
 {
 
-    auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     return !ps->actor_perk_ranks.empty();
 }
 bool PerkManip::IsSerialisationMapEmpty()
 {
-    auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     return !ps->serialisation_map.empty();
 }
 bool PerkManip::HasPerk_Unsafe(RE::Actor* a_actor, RE::BGSPerk* a_perk)
@@ -374,7 +374,7 @@ bool PerkManip::HasPerk_Unsafe(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         return false;
     }
 
-    auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     std::shared_lock lock(ps->perk_mutex);
     auto it = ps->actor_perk_ranks.find(a_actor);
     if (it == ps->actor_perk_ranks.end())
