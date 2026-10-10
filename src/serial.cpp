@@ -29,7 +29,7 @@ void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 
     logs::info("Start saving to SKSE co-save");
 
-    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
     ps->OnSave();
 
     serde_map local{};
@@ -142,7 +142,7 @@ void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
             }
             local.emplace(resolvedActor, std::move(perks));
         }
-        const auto ps            = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+        const auto ps            = REX::Singleton<ActorPerkStorage>::GetSingleton();
         std::size_t loaded_count = 0;
         {
             std::unique_lock lock(ps->perk_mutex);
@@ -159,7 +159,7 @@ void Serialisation::RevertCallback([[maybe_unused]] SKSE::SerializationInterface
 
     logs::info("Reverting actors with perks");
 
-    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
     std::unique_lock lock(ps->perk_mutex);
     ps->actor_perk_ranks.clear();
     ps->serialisation_map.clear();
