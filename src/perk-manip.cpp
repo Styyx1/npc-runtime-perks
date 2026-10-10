@@ -215,7 +215,7 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
     // ActorPerkStorage::GetSingleton() is completely fine but clangd complains
     // and shows anything used from that scruct as error unless gotten explicitely
     // the magic of developing on linux
-    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
 
     bool apply = false;
     {
@@ -255,7 +255,7 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         return;
     }
 
-    auto* ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+    auto* ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
 
     bool removeEntries = false;
 
