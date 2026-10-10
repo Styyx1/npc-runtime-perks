@@ -2,11 +2,6 @@
 
 #include <shared_mutex>
 
-#include "RE/A/Actor.h"
-#include "RE/B/BGSPerkRankArray.h"
-#include "REX/TSingleton.h"
-
-
 namespace PERK
 {
 struct ActorPerkStorage : REX::TSingleton<ActorPerkStorage>
