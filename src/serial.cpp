@@ -4,10 +4,6 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "RE/B/BSCoreTypes.h"
-#include "REX/LOG.h"
-#include "REX/TSingleton.h"
-#include "SKSE/API.h"
 #include "perk-manip.h"
 
 namespace PERK
