@@ -1,12 +1,15 @@
 #pragma once
 
 #include <shared_mutex>
-#include <unordered_map>
+
+#include "RE/A/Actor.h"
+#include "RE/B/BGSPerkRankArray.h"
+#include "REX/TSingleton.h"
 
 
 namespace PERK
 {
-struct ActorPerkStorage : REX::Singleton<ActorPerkStorage>
+struct ActorPerkStorage : REX::TSingleton<ActorPerkStorage>
 {
 
     // mimic PerkRankData for serialisation cause i don't think BGSPerk* can be
@@ -20,9 +23,9 @@ struct ActorPerkStorage : REX::Singleton<ActorPerkStorage>
     // gameplay map
     // FormID lookup isn't great during gameplay i think
     // may need some testing but this will do for now
-    std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>> actor_perk_ranks;
+    std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>> actor_perk_ranks{};
     // serialisation map.
-    std::unordered_map<RE::FormID, std::vector<SerialisedPerkData>> serialisation_map;
+    std::unordered_map<RE::FormID, std::vector<SerialisedPerkData>> serialisation_map{};
 
     void OnSave();
     void OnLoad();
@@ -31,7 +34,6 @@ struct ActorPerkStorage : REX::Singleton<ActorPerkStorage>
     void AddRuntimePerksToVector(RE::Actor* a_actor, std::vector<RE::BGSPerk*>& a_vectorOut);
     bool HasAnyPerk(RE::Actor* a_actor);
     bool HasRuntimeAddedPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk);
-    void LogPerksFromMap(RE::Actor* a_actor);
 
   private:
     void RebuildSerialisationMap();
@@ -50,6 +52,7 @@ struct PerkManip
     static void ApplyPerksFromMap(RE::Actor* a_actor);
     static bool IsGameplayMapEmpty();
     static bool IsSerialisationMapEmpty();
+
 
   private:
     static bool HasPerk_Unsafe(RE::Actor* a_actor, RE::BGSPerk* a_perk);
