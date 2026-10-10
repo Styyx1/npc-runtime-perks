@@ -8,12 +8,40 @@
 #include <vector>
 
 #include "RE/B/BGSAbilityPerkEntry.h"
+#include "RE/B/BGSPerk.h"
 #include "RE/B/BGSPerkEntry.h"
 #include "RE/Offsets_RTTI.h"
 #include "SKSE/API.h"
 
 namespace PERK
 {
+
+void EntryTaskStuff(RE::Actor* a_actor, RE::BGSPerkEntry* a_entry, bool a_applyIt)
+{
+    if (!a_actor || !a_entry)
+    {
+        return;
+    }
+    // attempt to keep actor alive till task is run to prevent reported crash
+    // decompilation of the dll makes me assume the task was the issue.
+    const RE::NiPointer<RE::Actor> actor{a_actor};
+    SKSE::GetTaskInterface()->AddTask(
+        [actor, a_entry, a_applyIt]
+        {
+            if (actor->IsDeleted())
+                return;
+
+            if (a_applyIt)
+            {
+                a_entry->ApplyPerkEntry(actor.get());
+            }
+            else
+            {
+                a_entry->RemovePerkEntry(actor.get());
+            }
+            actor->OnArmorActorValueChanged();
+        });
+}
 
 void ActorPerkStorage::OnSave()
 {
@@ -26,7 +54,7 @@ void ActorPerkStorage::OnLoad()
 std::vector<RE::BGSPerk*> ActorPerkStorage::GetPerks(RE::Actor* a_actor)
 {
 
-    std::vector<RE::BGSPerk*> result;
+    std::vector<RE::BGSPerk*> result{};
 
     if (!a_actor)
         return result;
@@ -46,9 +74,9 @@ std::vector<RE::BGSPerk*> ActorPerkStorage::GetPerks(RE::Actor* a_actor)
     }
     return result;
 }
+
 void ActorPerkStorage::AddRuntimePerksToVector(RE::Actor* a_actor, std::vector<RE::BGSPerk*>& a_vectorOut)
 {
-
     if (!a_actor)
     {
         return;
@@ -82,6 +110,7 @@ bool ActorPerkStorage::HasAnyPerk(RE::Actor* a_actor)
 bool ActorPerkStorage::HasRuntimeAddedPerk(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 {
 
+    std::shared_lock lock(perk_mutex);
     if (!a_actor || !a_perk)
     {
         return false;
@@ -95,39 +124,20 @@ bool ActorPerkStorage::HasRuntimeAddedPerk(RE::Actor* a_actor, RE::BGSPerk* a_pe
     return std::ranges::any_of(it->second,
                                [a_perk](RE::PerkRankData& a_data) { return a_data.perk && a_data.perk == a_perk; });
 }
-void ActorPerkStorage::LogPerksFromMap(RE::Actor* a_actor)
-{
-
-    if (!a_actor)
-    {
-        return;
-    }
-    auto it = actor_perk_ranks.find(a_actor);
-    if (it != actor_perk_ranks.end())
-    {
-        for (auto& data : it->second)
-        {
-            if (!data.perk)
-            {
-                continue;
-            }
-        }
-    }
-}
-
 
 void ActorPerkStorage::RebuildSerialisationMap()
 {
 
-    serialisation_map.clear();
-    std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>> temp_map{};
+    std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>> snap;
 
     {
         std::shared_lock lock(perk_mutex);
-        temp_map = actor_perk_ranks;
+        snap = actor_perk_ranks;
     }
 
-    for (auto& [actor, perkranks] : temp_map)
+    std::unordered_map<RE::FormID, std::vector<SerialisedPerkData>> new_map;
+
+    for (auto& [actor, perkranks] : snap)
     {
 
         if (!actor)
@@ -135,7 +145,6 @@ void ActorPerkStorage::RebuildSerialisationMap()
             continue;
         }
 
-        REX::INFO("saving for actor: {}", actor->GetName());
         std::vector<SerialisedPerkData> temp_data{};
         temp_data.reserve(perkranks.size());
         for (auto& perkData : perkranks)
@@ -143,28 +152,31 @@ void ActorPerkStorage::RebuildSerialisationMap()
             if (!perkData.perk)
                 continue;
 
-            REX::INFO("saving perk: {}", perkData.perk->GetName());
-
             SerialisedPerkData data{perkData.perk->GetFormID(), perkData.currentRank};
 
             temp_data.push_back(data);
         }
         if (!temp_data.empty())
-            serialisation_map.emplace(actor->GetFormID(), std::move(temp_data));
+            new_map.emplace(actor->GetFormID(), std::move(temp_data));
+    }
+    {
+        std::unique_lock lock(perk_mutex);
+        serialisation_map = std::move(new_map);
     }
 }
+
 void ActorPerkStorage::RebuildGameplayMap()
 {
-    actor_perk_ranks.clear();
-
-    std::unordered_map<RE::FormID, std::vector<SerialisedPerkData>> temp_map;
+    std::unordered_map<RE::FormID, std::vector<SerialisedPerkData>> snap;
 
     {
         std::shared_lock lock(perk_mutex);
-        temp_map = serialisation_map;
+        snap = serialisation_map;
     }
 
-    for (auto& [actorID, perkranks] : temp_map)
+    std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>> new_map;
+
+    for (auto& [actorID, perkranks] : snap)
     {
         const auto act_form = RE::TESForm::LookupByID(actorID);
         const auto actor    = act_form ? act_form->As<RE::Actor>() : nullptr;
@@ -186,7 +198,11 @@ void ActorPerkStorage::RebuildGameplayMap()
             temp_data.emplace_back(perk, perkData.m_rank);
         }
 
-        actor_perk_ranks[actor] = std::move(temp_data);
+        new_map[actor] = std::move(temp_data);
+    }
+    {
+        std::unique_lock lock(perk_mutex);
+        actor_perk_ranks = std::move(new_map);
     }
 }
 void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
@@ -203,6 +219,7 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 
     bool apply = false;
     {
+        std::unique_lock lock(ps->perk_mutex);
         auto& perks = ps->actor_perk_ranks[a_actor];
 
         auto perkIt =
@@ -226,12 +243,7 @@ void PerkManip::AddPerkToActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
         {
             if (entry)
             {
-                SKSE::GetTaskInterface()->AddTask(
-                    [entry, a_actor]()
-                    {
-                        entry->ApplyPerkEntry(a_actor);
-                        a_actor->OnArmorActorValueChanged();
-                    });
+                EntryTaskStuff(a_actor, entry, true);
             }
         }
     }
@@ -248,6 +260,7 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
     bool removeEntries = false;
 
     {
+        std::unique_lock lock(ps->perk_mutex);
         auto actorIt = ps->actor_perk_ranks.find(a_actor);
         if (actorIt == ps->actor_perk_ranks.end())
         {
@@ -287,44 +300,9 @@ void PerkManip::RemovePerkFromActor(RE::Actor* a_actor, RE::BGSPerk* a_perk)
 
     for (auto* entry : a_perk->perkEntries)
     {
-        if (!entry)
+        if (entry)
         {
-            continue;
-        }
-
-        switch (entry->GetType())
-        {
-            case RE::PERK_ENTRY_TYPE::kEntryPoint:
-                SKSE::GetTaskInterface()->AddTask(
-                    [entry, a_actor]()
-                    {
-                        entry->RemovePerkEntry(a_actor);
-                        a_actor->OnArmorActorValueChanged();
-                    });
-
-                break;
-            case RE::PERK_ENTRY_TYPE::kAbility:
-            {
-                RE::BGSAbilityPerkEntry* ab = static_cast<RE::BGSAbilityPerkEntry*>(entry);
-
-
-                if (ab)
-                {
-                    SKSE::GetTaskInterface()->AddTask(
-                        [ab, a_actor]()
-                        {
-                            ab->RemovePerkEntry(a_actor);
-                            a_actor->OnArmorActorValueChanged();
-                        });
-                }
-                else
-                {
-                    REX::WARN("CAST FAILED");
-                }
-            }
-            break;
-            default:
-                break;
+            EntryTaskStuff(a_actor, entry, false);
         }
     }
 }
@@ -365,6 +343,10 @@ void PerkManip::ApplyPerksFromMap(RE::Actor* a_actor)
                 SKSE::GetTaskInterface()->AddTask(
                     [entry, a_actor]()
                     {
+                        if (!entry || !a_actor)
+                        {
+                            return;
+                        }
                         entry->ApplyPerkEntry(a_actor);
                         a_actor->OnArmorActorValueChanged();
                     });
@@ -372,7 +354,6 @@ void PerkManip::ApplyPerksFromMap(RE::Actor* a_actor)
             ranks--;
         }
     }
-    REX::INFO("Applied {} perk entries to {}", applications, a_actor->GetName());
 }
 bool PerkManip::IsGameplayMapEmpty()
 {
@@ -394,7 +375,7 @@ bool PerkManip::HasPerk_Unsafe(RE::Actor* a_actor, RE::BGSPerk* a_perk)
     }
 
     auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
-
+    std::shared_lock lock(ps->perk_mutex);
     auto it = ps->actor_perk_ranks.find(a_actor);
     if (it == ps->actor_perk_ranks.end())
     {

@@ -1,3 +1,10 @@
+-- needed to build with msvc-wine
+if is_plat("windows") then
+    add_cxxflags("cl::/std:c++23preview", {force = true})
+else
+    set_languages("c++23")
+end
+
 -- set required xmake version
 set_xmakever("2.8.2")
 
@@ -14,14 +21,14 @@ set_version("1.1.0")
 set_license("GPL-3.0")
 
 -- language and warnings
-set_languages("c++23")
 set_warnings("allextra")
 
 -- xmake rules
 add_rules("mode.debug", "mode.releasedbg")
 set_defaultmode("releasedbg")
---add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"}) --useful for clion or vscode
+add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"}) --useful for clion or vscode
 add_rules("plugin.vsxmake.autoupdate")
+add_requires("safetyhook")
 
 
 -- commonlib options
@@ -34,6 +41,7 @@ set_config("use-fui", true)
 target(mod_name)
     add_deps("commonlibsse", {public = true})
     add_deps("styyx-util", {public = true})
+    add_packages("safetyhook")
 
     add_rules("commonlibsse.plugin", {
         name = mod_name,
