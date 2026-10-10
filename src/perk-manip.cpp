@@ -7,12 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "RE/B/BGSAbilityPerkEntry.h"
-#include "RE/B/BGSPerk.h"
-#include "RE/B/BGSPerkEntry.h"
-#include "RE/Offsets_RTTI.h"
-#include "SKSE/API.h"
-
 namespace PERK
 {
 
