@@ -1,175 +1,169 @@
 #include "serial.h"
 
+#include <cstdint>
+#include <mutex>
+#include <shared_mutex>
+
+#include "RE/B/BSCoreTypes.h"
+#include "REX/LOG.h"
+#include "REX/TSingleton.h"
+#include "SKSE/API.h"
 #include "perk-manip.h"
-
-using serde_map = std::unordered_map<RE::FormID, std::vector<PERK::ActorPerkStorage::SerialisedPerkData>>;
-
-using gp_map = std::unordered_map<RE::Actor*, std::vector<RE::PerkRankData>>;
 
 namespace PERK
 {
+namespace
+{
+using PerkData  = ActorPerkStorage::SerialisedPerkData;
+using serde_map = std::unordered_map<RE::FormID, std::vector<PerkData>>;
+
+} // namespace
 void Serialisation::InitialiseSerialisation()
 {
-    if (const auto serialisation = SKSE::GetSerializationInterface())
+    if (auto serde = SKSE::GetSerializationInterface())
     {
-        logs::info("{:=^30}", "SERIALISATION"sv);
-        serialisation->SetUniqueID(ID);
-        serialisation->SetSaveCallback(&SaveCallback);
-        serialisation->SetLoadCallback(&LoadCallback);
-        serialisation->SetRevertCallback(&RevertCallback);
-        logs::info("Initialised serialisation");
+        serde->SetUniqueID(ID);
+        serde->SetSaveCallback(&SaveCallback);
+        serde->SetLoadCallback(&LoadCallback);
+        serde->SetRevertCallback(&RevertCallback);
     }
 }
-
 void Serialisation::SaveCallback(SKSE::SerializationInterface* a_intfc)
 {
+
     logs::info("Start saving to SKSE co-save");
 
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
+    auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     ps->OnSave();
 
     serde_map local{};
-    // extra scope for lock and copy map
     {
         std::shared_lock lock(ps->perk_mutex);
         local = ps->serialisation_map;
     }
-
     if (!a_intfc->OpenRecord(Type, Version))
     {
-        logs::error("Failed to open record");
+        logs::error("Failed to open record on save");
         return;
     }
 
-    const uint32_t count = static_cast<uint32_t>(local.size());
-
-    if (!a_intfc->WriteRecordData(count))
+    const auto size = static_cast<uint32_t>(local.size());
+    if (!a_intfc->WriteRecordData(size))
     {
-        logs::error("Failed to write map size");
+        logs::error("Failed to save map size");
         return;
     }
-
     for (const auto& [actorID, perkArray] : local)
     {
-        if (!a_intfc->WriteRecordData(actorID))
-            return;
 
-        const uint32_t perkCount = static_cast<uint32_t>(perkArray.size());
+        const auto perkCount = static_cast<uint32_t>(perkArray.size());
 
-        if (!a_intfc->WriteRecordData(perkCount))
-            return;
-
-        for (const auto& perkData : perkArray)
+        if (!a_intfc->WriteRecordData(actorID) || !a_intfc->WriteRecordData(perkCount))
         {
-            if (!a_intfc->WriteRecordData(perkData.m_perkID))
+            logs::error("Failed to write data for actor {:08x}", actorID);
+            return;
+        }
+        for (const auto& perk : perkArray)
+        {
+            if (!a_intfc->WriteRecordData(perk.m_perkID) || !a_intfc->WriteRecordData(static_cast<int8_t>(perk.m_rank)))
+            {
+                logs::error("Failed to write perk {:08X} for actor {:08X}", perk.m_perkID, actorID);
                 return;
-
-            if (!a_intfc->WriteRecordData(perkData.m_rank))
-                return;
+            }
         }
     }
 
-    logs::info("Saved {} actors with perks", count);
+    logs::info("Saved {} actors with perks", size);
 }
-
 void Serialisation::LoadCallback(SKSE::SerializationInterface* a_intfc)
 {
+
     uint32_t type, version, length;
 
-    if (!a_intfc->GetNextRecordInfo(type, version, length))
-        return;
-
-    if (type != Type || version != Version)
-    {
-        logs::error("version or type don't match");
-        return;
-    }
-
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
-
-    uint32_t count = 0;
-    if (!a_intfc->ReadRecordData(count))
-    {
-        logs::error("Failed to read actor count");
-        return;
-    }
-    logs::info("Loaded Actor Count: {}", count);
-
-    serde_map new_map{};
-
-    for (uint32_t actor_it = 0; actor_it < count; actor_it++)
+    while (a_intfc->GetNextRecordInfo(type, version, length))
     {
 
-        RE::FormID actorID;
-        if (!a_intfc->ReadRecordData(actorID))
+        if (type != Type)
         {
-            logs::error("Failed to read ActorID on load");
-            return;
-        }
-        // logs::info("ActorID is: {}", actorID);
-        uint32_t perk_data_count = 0;
-        if (!a_intfc->ReadRecordData(perk_data_count))
-        {
-            logs::error("Failed to read Perk Count");
-            return;
-        }
-
-        RE::FormID resolvedActorID;
-        if (!a_intfc->ResolveFormID(actorID, resolvedActorID))
-        {
-            logs::error("Failed to resolve actor ID");
             continue;
         }
 
-        std::vector<ActorPerkStorage::SerialisedPerkData> temp_perks{};
-        temp_perks.reserve(perk_data_count);
+        if (version != Version)
+        {
+            logs::error("Unsupported record version {} (expected {})", version, Version);
+            continue;
+        }
 
-        for (uint32_t perk_iterator = 0; perk_iterator < perk_data_count; perk_iterator++)
+        uint32_t count = 0;
+        if (!a_intfc->ReadRecordData(count))
+        {
+            logs::error("Can not read Actor count from save");
+            return;
+        }
+        serde_map local{};
+
+        for (uint32_t iter = 0; iter < count; ++iter)
         {
 
-            RE::FormID perk_id;
-            int8_t rank;
+            RE::FormID actorID = 0;
+            uint32_t perkCount = 0;
 
-            if (!a_intfc->ReadRecordData(perk_id))
+            if (!a_intfc->ReadRecordData(actorID) || !a_intfc->ReadRecordData(perkCount))
             {
-                logs::error("Failed to read PerkID");
+                logs::error("Failed to read data for actor");
                 return;
             }
-            if (!a_intfc->ReadRecordData(rank))
+            std::vector<ActorPerkStorage::SerialisedPerkData> perks;
+            for (uint32_t perkIter = 0; perkIter < perkCount; ++perkIter)
             {
-                logs::error("Failed to read Rank");
-                return;
+                RE::FormID perkID = 0;
+                int8_t rank       = 0;
+
+                if (!a_intfc->ReadRecordData(perkID) || !a_intfc->ReadRecordData(rank))
+                {
+                    logs::error("Failed to read perk data");
+                    return;
+                }
+
+                RE::FormID resolvedPerk = 0;
+
+                if (!a_intfc->ResolveFormID(perkID, resolvedPerk))
+                {
+                    logs::warn("Dropping perk {:08x}: couldn't resolve form (mod removed?)", perkID);
+                    continue;
+                }
+                perks.push_back({resolvedPerk, rank});
             }
-
-            RE::FormID resolvedPerkID;
-
-            if (!a_intfc->ResolveFormID(perk_id, resolvedPerkID))
+            RE::FormID resolvedActor = 0;
+            if (!a_intfc->ResolveFormID(actorID, resolvedActor))
             {
-                logs::warn("Failed to Resolve PerkID");
+                logs::warn("Dropping actor {:08x}: couldn't resolve actor (mod removed?)", actorID);
                 continue;
             }
-            temp_perks.push_back({resolvedPerkID, rank});
+            if (perks.empty())
+            {
+                continue;
+            }
+            local.emplace(resolvedActor, std::move(perks));
         }
-        if (!temp_perks.empty())
+        const auto ps            = REX::TSingleton<ActorPerkStorage>::GetSingleton();
+        std::size_t loaded_count = 0;
         {
-            new_map.emplace(resolvedActorID, std::move(temp_perks));
+            std::unique_lock lock(ps->perk_mutex);
+            ps->serialisation_map = std::move(local);
+            loaded_count          = ps->serialisation_map.size();
         }
+        ps->OnLoad();
+        logs::info("Loaded {} actors with perks", loaded_count);
+        return;
     }
-
-    {
-        std::unique_lock lock(ps->perk_mutex);
-        ps->serialisation_map = std::move(new_map);
-    }
-    ps->OnLoad();
-    logs::info("Loaded {} actors with perks", ps->serialisation_map.size());
 }
-
 void Serialisation::RevertCallback([[maybe_unused]] SKSE::SerializationInterface* a_intfc)
 {
+
     logs::info("Reverting actors with perks");
 
-    const auto ps = REX::Singleton<ActorPerkStorage>::GetSingleton();
-
+    const auto ps = REX::TSingleton<ActorPerkStorage>::GetSingleton();
     std::unique_lock lock(ps->perk_mutex);
     ps->actor_perk_ranks.clear();
     ps->serialisation_map.clear();
