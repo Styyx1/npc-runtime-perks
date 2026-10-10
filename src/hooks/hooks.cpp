@@ -92,11 +92,6 @@ void PerkForActors::ForEachHook::Call(RE::Actor* a_actor, RE::PerkEntryVisitor& 
             }
         }
     }
-
-    ps->LogPerksFromMap(a_actor);
-
-    // PerkManip::ApplyPerksFromMap(a_actor);
-
     for (auto* perk : perks)
     {
 
