@@ -4,7 +4,7 @@
 
 namespace PERK
 {
-struct ActorPerkStorage : REX::TSingleton<ActorPerkStorage>
+struct ActorPerkStorage : REX::Singleton<ActorPerkStorage>
 {
 
     // mimic PerkRankData for serialisation cause i don't think BGSPerk* can be
